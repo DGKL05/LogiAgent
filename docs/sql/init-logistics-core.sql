@@ -42,3 +42,29 @@ CREATE TABLE IF NOT EXISTS t_track (
     create_time DATETIME NOT NULL,
     KEY idx_track_waybill_time (waybill_no, event_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_agent_session (
+    id BIGINT NOT NULL PRIMARY KEY,
+    session_id VARCHAR(40) NOT NULL,
+    user_id BIGINT NULL,
+    question VARCHAR(512) NOT NULL,
+    intent VARCHAR(64) NOT NULL,
+    answer TEXT NOT NULL,
+    create_time DATETIME NOT NULL,
+    UNIQUE KEY uk_agent_session_id (session_id),
+    KEY idx_agent_session_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_agent_tool_log (
+    id BIGINT NOT NULL PRIMARY KEY,
+    session_id VARCHAR(40) NOT NULL,
+    tool_name VARCHAR(128) NOT NULL,
+    request_params TEXT NULL,
+    response_result TEXT NULL,
+    success TINYINT(1) NOT NULL,
+    error_msg TEXT NULL,
+    cost_ms BIGINT NOT NULL,
+    create_time DATETIME NOT NULL,
+    KEY idx_agent_tool_log_session_id (session_id),
+    KEY idx_agent_tool_log_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

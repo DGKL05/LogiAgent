@@ -1,8 +1,8 @@
 # LogiAgent
 
-LogiAgent 是一个 Java 17 + Spring Cloud Alibaba 物流微服务项目，后续会把 AI Agent 作为核心展示亮点。
+LogiAgent 是一个 Java 17 + Spring Cloud Alibaba 物流微服务项目，AI Agent 是当前阶段的核心展示能力。
 
-当前处于 Milestone 2：物流核心业务闭环。已完成订单、运单、轨迹三个核心服务的基础 API、MyBatis Plus 接入、OpenFeign 同步生成运单、Gateway 路由与 SQL 初始化脚本。
+当前处于 Milestone 3：AI Agent MVP。已完成订单、运单、轨迹核心业务闭环，并新增规则版 Agent：用户用自然语言询问运单，Agent 识别意图后通过 Tool + Feign 调用业务服务，汇总运单和轨迹数据并返回自然语言分析。
 
 ## 技术栈
 
@@ -21,23 +21,46 @@ LogiAgent 是一个 Java 17 + Spring Cloud Alibaba 物流微服务项目，后�
 
 ```text
 logiagent
-├── logistics-common              通用 Result、ErrorCode、BusinessException、枚举、分页对象
+├── logistics-common              Result、ErrorCode、BusinessException、枚举、分页对象
 ├── logistics-api                 服务间 DTO、Request、Feign Client
 ├── logistics-gateway             Gateway 路由
 ├── logistics-auth-service        认证服务骨架
 ├── logistics-order-service       订单服务
 ├── logistics-waybill-service     运单服务
 ├── logistics-track-service       轨迹服务
-└── logistics-ai-agent-service    AI Agent 服务骨架
+└── logistics-ai-agent-service    规则版 AI Agent MVP
 ```
 
-## 本阶段核心链路
+## 核心链路
+
+物流业务：
 
 ```text
-创建订单 -> OpenFeign 调用运单服务生成运单 -> 查询运单 -> 添加轨迹 -> 查询轨迹 -> 标记异常件
+创建订单 -> 生成运单 -> 添加轨迹 -> 查询运单 -> 查询轨迹 -> 标记异常件
 ```
 
-AI Agent、路线规划、调度、MQ 异步化暂未实现。
+Agent 业务：
+
+```text
+用户问题 -> 意图识别 -> WaybillTool / TrackTool -> Feign 调用业务服务 -> 规则诊断 -> 保存会话和 Tool 日志
+```
+
+## Agent MVP 能力
+
+当前是规则版 Agent，不强制调用真实大模型。
+
+支持问题示例：
+
+- `帮我分析运单 WB20260509204042075 为什么还没签收`
+- `查询一下 WB20260509204042075 到哪里了`
+- `这个运单是不是异常了`
+
+意图识别规则：
+
+- 包含“为什么”“异常”“没签收”“不更新”“分析”等关键词时，识别为 `WAYBILL_EXCEPTION_DIAGNOSIS`。
+- 包含 `WB...` 运单号但不包含异常诊断关键词时，识别为 `WAYBILL_QUERY`。
+
+AI Agent 不直接访问 order、waybill、track 数据库，只通过 `WaybillTool`、`TrackTool` 调用 `logistics-api` 中的 Feign Client。
 
 ## 本地启动
 
@@ -61,17 +84,11 @@ MySQL 默认数据库为 `logiagent`。本项目不提交真实密码，`docker-
 mysql -h 127.0.0.1 -P 3306 -u root -p%MySQLPASS% < docs/sql/init-logistics-core.sql
 ```
 
-PowerShell 可以使用管道执行：
+PowerShell：
 
 ```powershell
 $env:MYSQL_PWD=$env:MySQLPASS
 Get-Content -Raw docs/sql/init-logistics-core.sql | mysql -h 127.0.0.1 -P 3306 -u root
-```
-
-也可以先进入 MySQL 客户端后执行：
-
-```sql
-source docs/sql/init-logistics-core.sql;
 ```
 
 ### 3. 编译
@@ -87,18 +104,8 @@ mvn spring-boot:run -pl logistics-gateway
 mvn spring-boot:run -pl logistics-order-service
 mvn spring-boot:run -pl logistics-waybill-service
 mvn spring-boot:run -pl logistics-track-service
+mvn spring-boot:run -pl logistics-ai-agent-service
 ```
-
-服务端口：
-
-| 服务 | 端口 |
-| --- | ---: |
-| logistics-gateway | 8080 |
-| logistics-auth-service | 9001 |
-| logistics-order-service | 9002 |
-| logistics-waybill-service | 9003 |
-| logistics-track-service | 9004 |
-| logistics-ai-agent-service | 9005 |
 
 ## Gateway 路由
 
@@ -110,34 +117,30 @@ mvn spring-boot:run -pl logistics-track-service
 | `/api/tracks/**` | `lb://logistics-track-service` |
 | `/api/agent/**` | `lb://logistics-ai-agent-service` |
 
-## 快速验证链路
-
-创建订单：
+## Agent 验证
 
 ```bash
-curl -X POST http://localhost:8080/api/orders ^
+curl -X POST http://localhost:8080/api/agent/chat ^
   -H "Content-Type: application/json" ^
-  -d "{\"senderId\":1,\"receiverName\":\"Zhang San\",\"receiverPhone\":\"13800000000\",\"receiverAddress\":\"Shenzhen Nanshan\",\"goodsName\":\"electronics\",\"weight\":2.50}"
+  -d "{\"userId\":1,\"message\":\"帮我分析运单 WB20260509204042075 为什么还没签收\"}"
 ```
 
-根据返回的 `waybillNo` 添加轨迹：
+返回的 `data` 包含：
 
-```bash
-curl -X POST http://localhost:8080/api/tracks ^
-  -H "Content-Type: application/json" ^
-  -d "{\"waybillNo\":\"WB202605090001\",\"action\":\"COLLECTED\",\"description\":\"Courier collected the parcel\",\"operatorId\":10}"
-```
+- `sessionId`
+- `intent`
+- `answer`
+- `toolCalls`
 
-标记异常件：
+可通过 MySQL 验证日志：
 
-```bash
-curl -X POST http://localhost:8080/api/waybills/WB202605090001/exception ^
-  -H "Content-Type: application/json" ^
-  -d "{\"exceptionType\":\"TIMEOUT\",\"exceptionReason\":\"No update for a long time\"}"
+```sql
+SELECT * FROM t_agent_session ORDER BY create_time DESC LIMIT 5;
+SELECT * FROM t_agent_tool_log ORDER BY create_time DESC LIMIT 10;
 ```
 
 ## 注意事项
 
 - 不要提交真实 API Key、Token、数据库密码、手机号、地址、身份证号。
-- AI Agent 后续只能通过 Tool + Feign 调用业务服务，不能直接访问其他服务数据库。
-- 当前阶段仅完成核心物流业务 MVP，不包含登录、权限、Agent、路线规划、调度、MQ。
+- `spring.ai.openai.api-key=${OPENAI_API_KEY:}` 仅作为后续大模型接入占位。
+- 当前不包含前端、路线规划、调度、RabbitMQ、Sentinel、Seata、复杂 RAG。

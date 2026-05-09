@@ -39,6 +39,6 @@ spring:
             - id: logistics-ai-agent-service
               uri: lb://logistics-ai-agent-service
               predicates:
-                - Path=/api/agent/**
+                - Path=/api/agent,/api/agent/**
               filters:
-                - StripPrefix=2
+                - StripPrefix=1

@@ -1,4 +1,17 @@
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: logiagent-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MySQLPASS:-logiagent123}
+      MYSQL_DATABASE: logiagent
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - logiagent-mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
   nacos:
     image: nacos/nacos-server:v2.3.2
     container_name: logiagent-nacos
@@ -9,3 +22,6 @@ services:
       - "8848:8848"
       - "9848:9848"
     restart: unless-stopped
+
+volumes:
+  logiagent-mysql-data:

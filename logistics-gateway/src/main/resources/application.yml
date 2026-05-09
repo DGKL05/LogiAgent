@@ -21,21 +21,21 @@ spring:
             - id: logistics-order-service
               uri: lb://logistics-order-service
               predicates:
-                - Path=/api/orders/**
+                - Path=/api/orders,/api/orders/**
               filters:
-                - StripPrefix=2
+                - StripPrefix=1
             - id: logistics-waybill-service
               uri: lb://logistics-waybill-service
               predicates:
-                - Path=/api/waybills/**
+                - Path=/api/waybills,/api/waybills/**
               filters:
-                - StripPrefix=2
+                - StripPrefix=1
             - id: logistics-track-service
               uri: lb://logistics-track-service
               predicates:
-                - Path=/api/tracks/**
+                - Path=/api/tracks,/api/tracks/**
               filters:
-                - StripPrefix=2
+                - StripPrefix=1
             - id: logistics-ai-agent-service
               uri: lb://logistics-ai-agent-service
               predicates:

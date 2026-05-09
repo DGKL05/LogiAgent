@@ -1,0 +1,11 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: logiagent-nacos
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: ""
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: unless-stopped

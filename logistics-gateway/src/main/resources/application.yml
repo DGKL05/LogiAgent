@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: logistics-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: logistics-auth-service
+              uri: lb://logistics-auth-service
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - StripPrefix=2
+            - id: logistics-order-service
+              uri: lb://logistics-order-service
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - StripPrefix=2
+            - id: logistics-waybill-service
+              uri: lb://logistics-waybill-service
+              predicates:
+                - Path=/api/waybills/**
+              filters:
+                - StripPrefix=2
+            - id: logistics-track-service
+              uri: lb://logistics-track-service
+              predicates:
+                - Path=/api/tracks/**
+              filters:
+                - StripPrefix=2
+            - id: logistics-ai-agent-service
+              uri: lb://logistics-ai-agent-service
+              predicates:
+                - Path=/api/agent/**
+              filters:
+                - StripPrefix=2

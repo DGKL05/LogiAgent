@@ -20,6 +20,8 @@
         <module>logistics-order-service</module>
         <module>logistics-waybill-service</module>
         <module>logistics-track-service</module>
+        <module>logistics-route-service</module>
+        <module>logistics-dispatch-service</module>
         <module>logistics-ai-agent-service</module>
     </modules>
 

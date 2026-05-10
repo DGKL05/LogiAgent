@@ -36,6 +36,24 @@ spring:
                 - Path=/api/tracks,/api/tracks/**
               filters:
                 - StripPrefix=1
+            - id: logistics-route-service
+              uri: lb://logistics-route-service
+              predicates:
+                - Path=/api/routes,/api/routes/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-station-route
+              uri: lb://logistics-route-service
+              predicates:
+                - Path=/api/stations,/api/stations/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-dispatch-service
+              uri: lb://logistics-dispatch-service
+              predicates:
+                - Path=/api/dispatch,/api/dispatch/**
+              filters:
+                - StripPrefix=1
             - id: logistics-ai-agent-service
               uri: lb://logistics-ai-agent-service
               predicates:

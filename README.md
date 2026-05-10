@@ -226,3 +226,39 @@ Agent 新增能力：
 - `DAILY_REPORT`：例如 `生成今天的物流日报`
 
 日报由 Agent 通过 Tool 调用订单、运单和调度服务生成 Markdown。当前 MVP 对“新增运单数、已签收数量、轨迹更新数量”暂未提供独立统计接口，日报会明确标注为 MVP 暂未统计，不使用假数据。
+## Milestone 5 真实统计日报
+
+Milestone 5 将物流日报从 MVP 占位统计升级为真实统计数据聚合。Agent 仍然不直接访问业务数据库，调用链路为：
+
+```text
+LogisticsReportAgent -> ReportDataTool -> Feign Client -> order / waybill / track / dispatch 服务
+```
+
+新增统计接口：
+
+- `GET /api/orders/statistics/daily?date=2026-05-10`
+- `GET /api/orders/statistics/range?startDate=2026-05-01&endDate=2026-05-10`
+- `GET /api/waybills/statistics/daily?date=2026-05-10`
+- `GET /api/waybills/statistics/range?startDate=2026-05-01&endDate=2026-05-10`
+- `GET /api/tracks/statistics/daily?date=2026-05-10`
+- `GET /api/tracks/statistics/waybill/{waybillNo}`
+
+日报内容包括基础概览、运单状态、异常情况、网点负载、调度建议和 Agent 分析结论。某个统计服务不可用时，日报对应项会显示“该项数据暂不可用”，不会填充假数据。
+
+统计口径：
+
+- 订单新增数：按 `t_order.create_time` 统计。
+- 订单取消数：按当前 `status=CANCELLED` 且 `update_time` 位于统计区间统计。
+- 订单状态分布：按当前订单状态统计。
+- 运单新增数：按 `t_waybill.create_time` 统计。
+- 已签收数量：按当前 `current_status=SIGNED` 且 `update_time` 位于统计区间统计。
+- 异常件数量、运输中数量、运单状态分布：按当前运单状态统计，用于反映当前运营风险。
+- 轨迹更新数量、活跃运单数量、轨迹动作分布：按 `t_track.event_time` 统计。
+
+验证日报：
+
+```bash
+curl -X POST http://localhost:8080/api/agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{"userId":1,"message":"生成今天的物流日报"}'
+```

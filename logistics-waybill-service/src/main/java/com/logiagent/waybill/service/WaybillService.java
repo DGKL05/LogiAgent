@@ -1,10 +1,13 @@
 package com.logiagent.waybill.service;
 
 import com.logiagent.api.dto.WaybillDTO;
+import com.logiagent.api.dto.WaybillDailyStatisticsDTO;
 import com.logiagent.api.request.CreateWaybillRequest;
 import com.logiagent.api.request.MarkExceptionRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
 import com.logiagent.common.result.PageResult;
+
+import java.time.LocalDate;
 
 public interface WaybillService {
 
@@ -19,4 +22,8 @@ public interface WaybillService {
     WaybillDTO markException(String waybillNo, MarkExceptionRequest request);
 
     PageResult<WaybillDTO> pageExceptions(long page, long size);
+
+    WaybillDailyStatisticsDTO dailyStatistics(LocalDate date);
+
+    WaybillDailyStatisticsDTO rangeStatistics(LocalDate startDate, LocalDate endDate);
 }

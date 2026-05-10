@@ -3,6 +3,7 @@ package com.logiagent.waybill.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.logiagent.api.dto.WaybillDTO;
+import com.logiagent.api.dto.WaybillDailyStatisticsDTO;
 import com.logiagent.api.request.CreateWaybillRequest;
 import com.logiagent.api.request.MarkExceptionRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
@@ -19,7 +20,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WaybillServiceImpl implements WaybillService {
@@ -113,6 +117,71 @@ public class WaybillServiceImpl implements WaybillService {
         );
         List<WaybillDTO> records = waybillPage.getRecords().stream().map(this::toDTO).toList();
         return PageResult.of(records, waybillPage.getTotal(), waybillPage.getCurrent(), waybillPage.getSize());
+    }
+
+    @Override
+    public WaybillDailyStatisticsDTO dailyStatistics(LocalDate date) {
+        LocalDate target = date == null ? LocalDate.now() : date;
+        return statistics(target, target);
+    }
+
+    @Override
+    public WaybillDailyStatisticsDTO rangeStatistics(LocalDate startDate, LocalDate endDate) {
+        LocalDate end = endDate == null ? LocalDate.now() : endDate;
+        LocalDate start = startDate == null ? end : startDate;
+        if (start.isAfter(end)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "startDate must not be after endDate");
+        }
+        return statistics(start, end);
+    }
+
+    private WaybillDailyStatisticsDTO statistics(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startTime = startDate.atStartOfDay();
+        LocalDateTime endExclusive = endDate.plusDays(1).atStartOfDay();
+        WaybillDailyStatisticsDTO dto = new WaybillDailyStatisticsDTO();
+        if (startDate.equals(endDate)) {
+            dto.setDate(startDate);
+        }
+        dto.setStartDate(startDate);
+        dto.setEndDate(endDate);
+        dto.setTotalWaybillCount(count(new LambdaQueryWrapper<>()));
+        dto.setNewWaybillCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .ge(WaybillEntity::getCreateTime, startTime)
+                .lt(WaybillEntity::getCreateTime, endExclusive)));
+        dto.setSignedWaybillCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getCurrentStatus, WaybillStatusEnum.SIGNED.name())
+                .ge(WaybillEntity::getUpdateTime, startTime)
+                .lt(WaybillEntity::getUpdateTime, endExclusive)));
+        dto.setExceptionWaybillCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getCurrentStatus, WaybillStatusEnum.EXCEPTION.name())));
+        dto.setTransportingWaybillCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getCurrentStatus, WaybillStatusEnum.TRANSPORTING.name())));
+        dto.setWaybillStatusCountMap(statusCountMap());
+        dto.setExceptionTypeCountMap(exceptionTypeCountMap());
+        return dto;
+    }
+
+    private Map<String, Long> statusCountMap() {
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (WaybillStatusEnum status : WaybillStatusEnum.values()) {
+            map.put(status.name(), count(new LambdaQueryWrapper<WaybillEntity>()
+                    .eq(WaybillEntity::getCurrentStatus, status.name())));
+        }
+        return map;
+    }
+
+    private Map<String, Long> exceptionTypeCountMap() {
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (ExceptionTypeEnum type : ExceptionTypeEnum.values()) {
+            map.put(type.name(), count(new LambdaQueryWrapper<WaybillEntity>()
+                    .eq(WaybillEntity::getExceptionType, type.name())));
+        }
+        return map;
+    }
+
+    private Long count(LambdaQueryWrapper<WaybillEntity> wrapper) {
+        Long count = waybillMapper.selectCount(wrapper);
+        return count == null ? 0L : count;
     }
 
     private WaybillEntity selectByWaybillNo(String waybillNo) {

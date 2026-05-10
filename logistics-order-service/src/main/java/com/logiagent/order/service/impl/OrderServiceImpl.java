@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.logiagent.api.client.WaybillFeignClient;
 import com.logiagent.api.dto.OrderDTO;
+import com.logiagent.api.dto.OrderDailyStatisticsDTO;
 import com.logiagent.api.dto.WaybillDTO;
 import com.logiagent.api.request.CreateOrderRequest;
 import com.logiagent.api.request.CreateWaybillRequest;
@@ -22,7 +23,10 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -95,6 +99,58 @@ public class OrderServiceImpl implements OrderService {
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
         return toDTO(order);
+    }
+
+    @Override
+    public OrderDailyStatisticsDTO dailyStatistics(LocalDate date) {
+        LocalDate target = date == null ? LocalDate.now() : date;
+        return statistics(target, target);
+    }
+
+    @Override
+    public OrderDailyStatisticsDTO rangeStatistics(LocalDate startDate, LocalDate endDate) {
+        LocalDate end = endDate == null ? LocalDate.now() : endDate;
+        LocalDate start = startDate == null ? end : startDate;
+        if (start.isAfter(end)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "startDate must not be after endDate");
+        }
+        return statistics(start, end);
+    }
+
+    private OrderDailyStatisticsDTO statistics(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startTime = startDate.atStartOfDay();
+        LocalDateTime endExclusive = endDate.plusDays(1).atStartOfDay();
+        OrderDailyStatisticsDTO dto = new OrderDailyStatisticsDTO();
+        if (startDate.equals(endDate)) {
+            dto.setDate(startDate);
+        }
+        dto.setStartDate(startDate);
+        dto.setEndDate(endDate);
+        dto.setTotalOrderCount(count(new LambdaQueryWrapper<>()));
+        dto.setNewOrderCount(count(new LambdaQueryWrapper<OrderEntity>()
+                .ge(OrderEntity::getCreateTime, startTime)
+                .lt(OrderEntity::getCreateTime, endExclusive)));
+        dto.setCancelledOrderCount(count(new LambdaQueryWrapper<OrderEntity>()
+                .eq(OrderEntity::getStatus, OrderStatusEnum.CANCELLED.name())
+                .ge(OrderEntity::getUpdateTime, startTime)
+                .lt(OrderEntity::getUpdateTime, endExclusive)));
+        dto.setOrderStatusCountMap(orderStatusCountMap());
+        return dto;
+    }
+
+    private Map<String, Long> orderStatusCountMap() {
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (OrderStatusEnum status : OrderStatusEnum.values()) {
+            Long count = count(new LambdaQueryWrapper<OrderEntity>()
+                    .eq(OrderEntity::getStatus, status.name()));
+            map.put(status.name(), count);
+        }
+        return map;
+    }
+
+    private Long count(LambdaQueryWrapper<OrderEntity> wrapper) {
+        Long count = orderMapper.selectCount(wrapper);
+        return count == null ? 0L : count;
     }
 
     private OrderEntity selectByOrderNo(String orderNo) {

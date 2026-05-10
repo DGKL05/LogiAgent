@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,5 +61,18 @@ class OrderServiceImplTest {
         assertThat(savedOrder.getReceiverName()).isEqualTo("Zhang San");
         assertThat(response.getOrderNo()).isEqualTo(savedOrder.getOrderNo());
         assertThat(response.getWaybillNo()).isEqualTo("WB202605090001");
+    }
+
+    @Test
+    void dailyStatisticsUsesRealOrderCounts() {
+        when(orderMapper.selectCount(any())).thenReturn(10L, 3L, 1L, 2L, 1L, 0L);
+
+        var statistics = orderService.dailyStatistics(LocalDate.of(2026, 5, 10));
+
+        assertThat(statistics.getDate()).isEqualTo(LocalDate.of(2026, 5, 10));
+        assertThat(statistics.getTotalOrderCount()).isEqualTo(10L);
+        assertThat(statistics.getNewOrderCount()).isEqualTo(3L);
+        assertThat(statistics.getCancelledOrderCount()).isEqualTo(1L);
+        assertThat(statistics.getOrderStatusCountMap()).containsEntry(OrderStatusEnum.CREATED.name(), 2L);
     }
 }

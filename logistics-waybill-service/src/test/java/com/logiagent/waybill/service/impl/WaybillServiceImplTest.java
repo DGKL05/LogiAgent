@@ -1,6 +1,7 @@
 package com.logiagent.waybill.service.impl;
 
 import com.logiagent.api.request.CreateWaybillRequest;
+import com.logiagent.common.enums.ExceptionTypeEnum;
 import com.logiagent.common.enums.WaybillStatusEnum;
 import com.logiagent.waybill.entity.WaybillEntity;
 import com.logiagent.waybill.mapper.WaybillMapper;
@@ -60,5 +61,26 @@ class WaybillServiceImplTest {
         assertThat(statistics.getExceptionWaybillCount()).isEqualTo(1L);
         assertThat(statistics.getTransportingWaybillCount()).isEqualTo(5L);
         assertThat(statistics.getWaybillStatusCountMap()).containsEntry(WaybillStatusEnum.TRANSPORTING.name(), 5L);
+    }
+
+    @Test
+    void resolveExceptionClearsExceptionFieldsAndRestoresTransportingStatus() {
+        WaybillEntity waybill = new WaybillEntity();
+        waybill.setId(1L);
+        waybill.setWaybillNo("WB202605100001");
+        waybill.setOrderNo("OD202605100001");
+        waybill.setCurrentStatus(WaybillStatusEnum.EXCEPTION.name());
+        waybill.setExceptionType(ExceptionTypeEnum.TIMEOUT.name());
+        waybill.setExceptionReason("timeout");
+        when(waybillMapper.selectOne(any())).thenReturn(waybill);
+
+        var result = waybillService.resolveException("WB202605100001");
+
+        ArgumentCaptor<WaybillEntity> captor = ArgumentCaptor.forClass(WaybillEntity.class);
+        verify(waybillMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getCurrentStatus()).isEqualTo(WaybillStatusEnum.TRANSPORTING.name());
+        assertThat(captor.getValue().getExceptionType()).isNull();
+        assertThat(captor.getValue().getExceptionReason()).isNull();
+        assertThat(result.getCurrentStatus()).isEqualTo(WaybillStatusEnum.TRANSPORTING.name());
     }
 }

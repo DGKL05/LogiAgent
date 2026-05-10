@@ -2,6 +2,7 @@ package com.logiagent.order.service.impl;
 
 import com.logiagent.api.client.WaybillFeignClient;
 import com.logiagent.api.dto.WaybillDTO;
+import com.logiagent.api.request.AdminOrderQueryRequest;
 import com.logiagent.api.request.CreateOrderRequest;
 import com.logiagent.common.enums.OrderStatusEnum;
 import com.logiagent.common.enums.WaybillStatusEnum;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,5 +76,29 @@ class OrderServiceImplTest {
         assertThat(statistics.getNewOrderCount()).isEqualTo(3L);
         assertThat(statistics.getCancelledOrderCount()).isEqualTo(1L);
         assertThat(statistics.getOrderStatusCountMap()).containsEntry(OrderStatusEnum.CREATED.name(), 2L);
+    }
+
+    @Test
+    void pageAdminOrdersReturnsFilteredPageDtos() {
+        OrderEntity order = new OrderEntity();
+        order.setId(1L);
+        order.setOrderNo("OD202605100001");
+        order.setSenderId(10L);
+        order.setReceiverName("Li Si");
+        order.setReceiverPhone("13900000000");
+        order.setReceiverAddress("Guangzhou");
+        order.setStatus(OrderStatusEnum.CREATED.name());
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<OrderEntity> pageResult =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10, 1);
+        pageResult.setRecords(List.of(order));
+        when(orderMapper.selectPage(any(), any())).thenReturn(pageResult);
+
+        AdminOrderQueryRequest request = new AdminOrderQueryRequest();
+        request.setOrderNo("OD202605100001");
+        var result = orderService.pageAdminOrders(request);
+
+        assertThat(result.getTotal()).isEqualTo(1L);
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getOrderNo()).isEqualTo("OD202605100001");
     }
 }

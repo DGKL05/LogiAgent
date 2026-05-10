@@ -262,3 +262,10 @@ curl -X POST http://localhost:8080/api/agent/chat \
   -H "Content-Type: application/json" \
   -d '{"userId":1,"message":"生成今天的物流日报"}'
 ```
+## Milestone 6 管理员后台接口
+
+Milestone 6 为后续 Vue3 + Element Plus 管理后台补充后端接口能力。本阶段不新增独立 admin-service，后台接口按业务域落在已有服务中，统一使用 `/api/admin/**` 网关路径。
+
+管理后台能力包括订单管理、运单管理、异常件管理、网点管理、线路管理、调度任务管理、Agent 会话管理和数据看板。Dashboard 由 ai-agent-service 通过 Feign 聚合业务服务统计数据，不直接访问 order、waybill、track、dispatch 数据库。
+
+当前权限系统仍是 MVP 预留，`/api/admin/**` 后续可接入 auth-service、JWT 和 RBAC。

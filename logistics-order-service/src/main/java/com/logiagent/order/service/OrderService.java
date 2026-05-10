@@ -2,6 +2,7 @@ package com.logiagent.order.service;
 
 import com.logiagent.api.dto.OrderDTO;
 import com.logiagent.api.dto.OrderDailyStatisticsDTO;
+import com.logiagent.api.request.AdminOrderQueryRequest;
 import com.logiagent.api.request.CreateOrderRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
 import com.logiagent.api.response.CreateOrderResponse;
@@ -17,9 +18,13 @@ public interface OrderService {
 
     PageResult<OrderDTO> pageOrders(long page, long size);
 
+    PageResult<OrderDTO> pageAdminOrders(AdminOrderQueryRequest request);
+
     OrderDTO updateStatus(String orderNo, UpdateStatusRequest request);
 
     OrderDailyStatisticsDTO dailyStatistics(LocalDate date);
 
     OrderDailyStatisticsDTO rangeStatistics(LocalDate startDate, LocalDate endDate);
+
+    OrderDailyStatisticsDTO adminStatistics();
 }

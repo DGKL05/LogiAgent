@@ -1,23 +1,20 @@
-package com.logiagent.route.entity;
+package com.logiagent.api.dto;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@TableName("t_route")
-public class RouteEntity {
+public class AdminRouteDTO implements Serializable {
 
-    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long startStationId;
+    private String startStationName;
     private Long endStationId;
-    private BigDecimal distanceKm;
-    private BigDecimal durationMinute;
+    private String endStationName;
+    private BigDecimal distance;
+    private BigDecimal estimatedHours;
     private BigDecimal cost;
-    private Boolean enabled;
+    private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
@@ -37,6 +34,14 @@ public class RouteEntity {
         this.startStationId = startStationId;
     }
 
+    public String getStartStationName() {
+        return startStationName;
+    }
+
+    public void setStartStationName(String startStationName) {
+        this.startStationName = startStationName;
+    }
+
     public Long getEndStationId() {
         return endStationId;
     }
@@ -45,20 +50,28 @@ public class RouteEntity {
         this.endStationId = endStationId;
     }
 
-    public BigDecimal getDistanceKm() {
-        return distanceKm;
+    public String getEndStationName() {
+        return endStationName;
     }
 
-    public void setDistanceKm(BigDecimal distanceKm) {
-        this.distanceKm = distanceKm;
+    public void setEndStationName(String endStationName) {
+        this.endStationName = endStationName;
     }
 
-    public BigDecimal getDurationMinute() {
-        return durationMinute;
+    public BigDecimal getDistance() {
+        return distance;
     }
 
-    public void setDurationMinute(BigDecimal durationMinute) {
-        this.durationMinute = durationMinute;
+    public void setDistance(BigDecimal distance) {
+        this.distance = distance;
+    }
+
+    public BigDecimal getEstimatedHours() {
+        return estimatedHours;
+    }
+
+    public void setEstimatedHours(BigDecimal estimatedHours) {
+        this.estimatedHours = estimatedHours;
     }
 
     public BigDecimal getCost() {
@@ -69,12 +82,12 @@ public class RouteEntity {
         this.cost = cost;
     }
 
-    public Boolean getEnabled() {
-        return enabled;
+    public String getStatus() {
+        return status;
     }
 
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreateTime() {

@@ -24,10 +24,28 @@ spring:
                 - Path=/api/orders,/api/orders/**
               filters:
                 - StripPrefix=1
+            - id: logistics-admin-order-service
+              uri: lb://logistics-order-service
+              predicates:
+                - Path=/api/admin/orders,/api/admin/orders/**
+              filters:
+                - StripPrefix=1
             - id: logistics-waybill-service
               uri: lb://logistics-waybill-service
               predicates:
                 - Path=/api/waybills,/api/waybills/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-admin-waybill-service
+              uri: lb://logistics-waybill-service
+              predicates:
+                - Path=/api/admin/waybills,/api/admin/waybills/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-admin-exception-service
+              uri: lb://logistics-waybill-service
+              predicates:
+                - Path=/api/admin/exceptions,/api/admin/exceptions/**
               filters:
                 - StripPrefix=1
             - id: logistics-track-service
@@ -42,6 +60,18 @@ spring:
                 - Path=/api/routes,/api/routes/**
               filters:
                 - StripPrefix=1
+            - id: logistics-admin-route-service
+              uri: lb://logistics-route-service
+              predicates:
+                - Path=/api/admin/routes,/api/admin/routes/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-admin-station-service
+              uri: lb://logistics-route-service
+              predicates:
+                - Path=/api/admin/stations,/api/admin/stations/**
+              filters:
+                - StripPrefix=1
             - id: logistics-station-route
               uri: lb://logistics-route-service
               predicates:
@@ -54,9 +84,27 @@ spring:
                 - Path=/api/dispatch,/api/dispatch/**
               filters:
                 - StripPrefix=1
+            - id: logistics-admin-dispatch-service
+              uri: lb://logistics-dispatch-service
+              predicates:
+                - Path=/api/admin/dispatch,/api/admin/dispatch/**
+              filters:
+                - StripPrefix=1
             - id: logistics-ai-agent-service
               uri: lb://logistics-ai-agent-service
               predicates:
                 - Path=/api/agent,/api/agent/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-admin-agent-service
+              uri: lb://logistics-ai-agent-service
+              predicates:
+                - Path=/api/admin/agent,/api/admin/agent/**
+              filters:
+                - StripPrefix=1
+            - id: logistics-admin-dashboard-service
+              uri: lb://logistics-ai-agent-service
+              predicates:
+                - Path=/api/admin/dashboard,/api/admin/dashboard/**
               filters:
                 - StripPrefix=1

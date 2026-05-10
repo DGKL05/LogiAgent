@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class AgentChatServiceImpl implements AgentChatService {
@@ -44,6 +45,7 @@ public class AgentChatServiceImpl implements AgentChatService {
     }
 
     private String generateSessionId() {
-        return "AGENT" + LocalDateTime.now().format(SESSION_TIME_FORMATTER);
+        int suffix = ThreadLocalRandom.current().nextInt(100, 1000);
+        return "AGENT" + LocalDateTime.now().format(SESSION_TIME_FORMATTER) + suffix;
     }
 }

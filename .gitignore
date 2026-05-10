@@ -14,5 +14,7 @@ target/
 logs/
 *.log
 
+docs/api/*.pdf
+
 .DS_Store
 Thumbs.db

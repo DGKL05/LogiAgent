@@ -11,8 +11,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class WaybillServiceImplTest {
@@ -37,5 +41,24 @@ class WaybillServiceImplTest {
         assertThat(savedWaybill.getOrderNo()).isEqualTo("OD202605090001");
         assertThat(savedWaybill.getCurrentStatus()).isEqualTo(WaybillStatusEnum.CREATED.name());
         assertThat(response.getWaybillNo()).isEqualTo(savedWaybill.getWaybillNo());
+    }
+
+    @Test
+    void dailyStatisticsUsesRealWaybillCounts() {
+        when(waybillMapper.selectCount(any())).thenReturn(
+                20L, 4L, 2L, 1L, 5L,
+                1L, 2L, 3L, 5L, 4L, 3L, 2L, 1L, 0L,
+                0L, 0L, 0L, 1L, 0L, 0L
+        );
+
+        var statistics = waybillService.dailyStatistics(LocalDate.of(2026, 5, 10));
+
+        assertThat(statistics.getDate()).isEqualTo(LocalDate.of(2026, 5, 10));
+        assertThat(statistics.getTotalWaybillCount()).isEqualTo(20L);
+        assertThat(statistics.getNewWaybillCount()).isEqualTo(4L);
+        assertThat(statistics.getSignedWaybillCount()).isEqualTo(2L);
+        assertThat(statistics.getExceptionWaybillCount()).isEqualTo(1L);
+        assertThat(statistics.getTransportingWaybillCount()).isEqualTo(5L);
+        assertThat(statistics.getWaybillStatusCountMap()).containsEntry(WaybillStatusEnum.TRANSPORTING.name(), 5L);
     }
 }

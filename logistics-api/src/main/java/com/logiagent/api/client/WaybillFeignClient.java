@@ -1,6 +1,7 @@
 package com.logiagent.api.client;
 
 import com.logiagent.api.dto.WaybillDTO;
+import com.logiagent.api.dto.WaybillDailyStatisticsDTO;
 import com.logiagent.api.request.CreateWaybillRequest;
 import com.logiagent.api.request.MarkExceptionRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.time.LocalDate;
 
 @FeignClient(name = "logistics-waybill-service", path = "/waybills")
 public interface WaybillFeignClient {
@@ -37,4 +40,11 @@ public interface WaybillFeignClient {
     @GetMapping("/exceptions")
     Result<PageResult<WaybillDTO>> listExceptions(@RequestParam("page") long page,
                                                   @RequestParam("size") long size);
+
+    @GetMapping("/statistics/daily")
+    Result<WaybillDailyStatisticsDTO> dailyStatistics(@RequestParam("date") LocalDate date);
+
+    @GetMapping("/statistics/range")
+    Result<WaybillDailyStatisticsDTO> rangeStatistics(@RequestParam("startDate") LocalDate startDate,
+                                                      @RequestParam("endDate") LocalDate endDate);
 }

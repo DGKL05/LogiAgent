@@ -1,6 +1,7 @@
 package com.logiagent.waybill.controller;
 
 import com.logiagent.api.dto.WaybillDTO;
+import com.logiagent.api.dto.WaybillDailyStatisticsDTO;
 import com.logiagent.api.request.CreateWaybillRequest;
 import com.logiagent.api.request.MarkExceptionRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/waybills")
@@ -57,5 +60,16 @@ public class WaybillController {
     public Result<PageResult<WaybillDTO>> pageExceptions(@RequestParam(name = "page", defaultValue = "1") long page,
                                                          @RequestParam(name = "size", defaultValue = "10") long size) {
         return Result.success(waybillService.pageExceptions(page, size));
+    }
+
+    @GetMapping("/statistics/daily")
+    public Result<WaybillDailyStatisticsDTO> dailyStatistics(@RequestParam("date") LocalDate date) {
+        return Result.success(waybillService.dailyStatistics(date));
+    }
+
+    @GetMapping("/statistics/range")
+    public Result<WaybillDailyStatisticsDTO> rangeStatistics(@RequestParam("startDate") LocalDate startDate,
+                                                            @RequestParam("endDate") LocalDate endDate) {
+        return Result.success(waybillService.rangeStatistics(startDate, endDate));
     }
 }

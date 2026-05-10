@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.logiagent.api.client.WaybillFeignClient;
 import com.logiagent.api.dto.OrderDTO;
 import com.logiagent.api.dto.OrderDailyStatisticsDTO;
+import com.logiagent.api.request.AdminOrderQueryRequest;
 import com.logiagent.api.dto.WaybillDTO;
 import com.logiagent.api.request.CreateOrderRequest;
 import com.logiagent.api.request.CreateWaybillRequest;
@@ -89,6 +90,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public PageResult<OrderDTO> pageAdminOrders(AdminOrderQueryRequest request) {
+        AdminOrderQueryRequest query = request == null ? new AdminOrderQueryRequest() : request;
+        Page<OrderEntity> pageParam = new Page<>(safePage(query.getPage()), safeSize(query.getSize()));
+        Page<OrderEntity> orderPage = orderMapper.selectPage(pageParam, buildAdminWrapper(query));
+        List<OrderDTO> records = orderPage.getRecords().stream().map(this::toDTO).toList();
+        return PageResult.of(records, orderPage.getTotal(), orderPage.getCurrent(), orderPage.getSize());
+    }
+
+    @Override
     public OrderDTO updateStatus(String orderNo, UpdateStatusRequest request) {
         if (request == null || !StringUtils.hasText(request.getStatus())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "status is required");
@@ -115,6 +125,46 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "startDate must not be after endDate");
         }
         return statistics(start, end);
+    }
+
+    @Override
+    public OrderDailyStatisticsDTO adminStatistics() {
+        return dailyStatistics(LocalDate.now());
+    }
+
+    private LambdaQueryWrapper<OrderEntity> buildAdminWrapper(AdminOrderQueryRequest query) {
+        LambdaQueryWrapper<OrderEntity> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getOrderNo())) {
+            wrapper.like(OrderEntity::getOrderNo, query.getOrderNo());
+        }
+        if (query.getSenderId() != null) {
+            wrapper.eq(OrderEntity::getSenderId, query.getSenderId());
+        }
+        if (StringUtils.hasText(query.getReceiverName())) {
+            wrapper.like(OrderEntity::getReceiverName, query.getReceiverName());
+        }
+        if (StringUtils.hasText(query.getReceiverPhone())) {
+            wrapper.like(OrderEntity::getReceiverPhone, query.getReceiverPhone());
+        }
+        if (StringUtils.hasText(query.getStatus())) {
+            OrderStatusEnum.valueOf(query.getStatus());
+            wrapper.eq(OrderEntity::getStatus, query.getStatus());
+        }
+        if (query.getStartTime() != null) {
+            wrapper.ge(OrderEntity::getCreateTime, query.getStartTime());
+        }
+        if (query.getEndTime() != null) {
+            wrapper.le(OrderEntity::getCreateTime, query.getEndTime());
+        }
+        return wrapper.orderByDesc(OrderEntity::getCreateTime);
+    }
+
+    private long safePage(Long page) {
+        return Math.max(page == null ? 1L : page, 1L);
+    }
+
+    private long safeSize(Long size) {
+        return Math.max(size == null ? 10L : size, 1L);
     }
 
     private OrderDailyStatisticsDTO statistics(LocalDate startDate, LocalDate endDate) {

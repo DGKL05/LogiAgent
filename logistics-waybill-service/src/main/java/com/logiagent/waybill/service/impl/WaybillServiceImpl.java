@@ -2,8 +2,11 @@ package com.logiagent.waybill.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.logiagent.api.dto.ExceptionStatisticsDTO;
 import com.logiagent.api.dto.WaybillDTO;
 import com.logiagent.api.dto.WaybillDailyStatisticsDTO;
+import com.logiagent.api.request.AdminExceptionQueryRequest;
+import com.logiagent.api.request.AdminWaybillQueryRequest;
 import com.logiagent.api.request.CreateWaybillRequest;
 import com.logiagent.api.request.MarkExceptionRequest;
 import com.logiagent.api.request.UpdateStatusRequest;
@@ -120,6 +123,49 @@ public class WaybillServiceImpl implements WaybillService {
     }
 
     @Override
+    public PageResult<WaybillDTO> pageAdminWaybills(AdminWaybillQueryRequest request) {
+        AdminWaybillQueryRequest query = request == null ? new AdminWaybillQueryRequest() : request;
+        Page<WaybillEntity> pageParam = new Page<>(safePage(query.getPage()), safeSize(query.getSize()));
+        Page<WaybillEntity> waybillPage = waybillMapper.selectPage(pageParam, buildAdminWrapper(query, false));
+        List<WaybillDTO> records = waybillPage.getRecords().stream().map(this::toDTO).toList();
+        return PageResult.of(records, waybillPage.getTotal(), waybillPage.getCurrent(), waybillPage.getSize());
+    }
+
+    @Override
+    public PageResult<WaybillDTO> pageAdminExceptions(AdminExceptionQueryRequest request) {
+        AdminExceptionQueryRequest query = request == null ? new AdminExceptionQueryRequest() : request;
+        Page<WaybillEntity> pageParam = new Page<>(safePage(query.getPage()), safeSize(query.getSize()));
+        Page<WaybillEntity> waybillPage = waybillMapper.selectPage(pageParam, buildAdminWrapper(query, true));
+        List<WaybillDTO> records = waybillPage.getRecords().stream().map(this::toDTO).toList();
+        return PageResult.of(records, waybillPage.getTotal(), waybillPage.getCurrent(), waybillPage.getSize());
+    }
+
+    @Override
+    public WaybillDTO resolveException(String waybillNo) {
+        WaybillEntity waybill = selectByWaybillNo(waybillNo);
+        waybill.setCurrentStatus(WaybillStatusEnum.TRANSPORTING.name());
+        waybill.setExceptionType(null);
+        waybill.setExceptionReason(null);
+        waybill.setUpdateTime(LocalDateTime.now());
+        waybillMapper.updateById(waybill);
+        return toDTO(waybill);
+    }
+
+    @Override
+    public ExceptionStatisticsDTO exceptionStatistics() {
+        ExceptionStatisticsDTO dto = new ExceptionStatisticsDTO();
+        dto.setTotalExceptionCount(count(exceptionBaseWrapper()));
+        dto.setTimeoutExceptionCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getExceptionType, ExceptionTypeEnum.TIMEOUT.name())));
+        dto.setRejectedExceptionCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getExceptionType, ExceptionTypeEnum.REJECTED.name())));
+        dto.setLostExceptionCount(count(new LambdaQueryWrapper<WaybillEntity>()
+                .eq(WaybillEntity::getExceptionType, ExceptionTypeEnum.LOST.name())));
+        dto.setExceptionTypeCountMap(exceptionTypeCountMap());
+        return dto;
+    }
+
+    @Override
     public WaybillDailyStatisticsDTO dailyStatistics(LocalDate date) {
         LocalDate target = date == null ? LocalDate.now() : date;
         return statistics(target, target);
@@ -177,6 +223,51 @@ public class WaybillServiceImpl implements WaybillService {
                     .eq(WaybillEntity::getExceptionType, type.name())));
         }
         return map;
+    }
+
+    private LambdaQueryWrapper<WaybillEntity> buildAdminWrapper(AdminWaybillQueryRequest query, boolean exceptionsOnly) {
+        LambdaQueryWrapper<WaybillEntity> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getWaybillNo())) {
+            wrapper.like(WaybillEntity::getWaybillNo, query.getWaybillNo());
+        }
+        if (StringUtils.hasText(query.getOrderNo())) {
+            wrapper.like(WaybillEntity::getOrderNo, query.getOrderNo());
+        }
+        if (StringUtils.hasText(query.getCurrentStatus())) {
+            WaybillStatusEnum.valueOf(query.getCurrentStatus());
+            wrapper.eq(WaybillEntity::getCurrentStatus, query.getCurrentStatus());
+        }
+        if (StringUtils.hasText(query.getExceptionType())) {
+            ExceptionTypeEnum.valueOf(query.getExceptionType());
+            wrapper.eq(WaybillEntity::getExceptionType, query.getExceptionType());
+        }
+        if (query.getStartTime() != null) {
+            wrapper.ge(WaybillEntity::getCreateTime, query.getStartTime());
+        }
+        if (query.getEndTime() != null) {
+            wrapper.le(WaybillEntity::getCreateTime, query.getEndTime());
+        }
+        if (exceptionsOnly) {
+            wrapper.and(item -> item.eq(WaybillEntity::getCurrentStatus, WaybillStatusEnum.EXCEPTION.name())
+                    .or()
+                    .isNotNull(WaybillEntity::getExceptionType));
+        }
+        return wrapper.orderByDesc(WaybillEntity::getUpdateTime);
+    }
+
+    private LambdaQueryWrapper<WaybillEntity> exceptionBaseWrapper() {
+        return new LambdaQueryWrapper<WaybillEntity>()
+                .and(item -> item.eq(WaybillEntity::getCurrentStatus, WaybillStatusEnum.EXCEPTION.name())
+                        .or()
+                        .isNotNull(WaybillEntity::getExceptionType));
+    }
+
+    private long safePage(Long page) {
+        return Math.max(page == null ? 1L : page, 1L);
+    }
+
+    private long safeSize(Long size) {
+        return Math.max(size == null ? 10L : size, 1L);
     }
 
     private Long count(LambdaQueryWrapper<WaybillEntity> wrapper) {

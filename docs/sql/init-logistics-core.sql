@@ -46,15 +46,42 @@ CREATE TABLE IF NOT EXISTS t_track (
 CREATE TABLE IF NOT EXISTS t_station (
     id BIGINT NOT NULL PRIMARY KEY,
     station_name VARCHAR(64) NOT NULL,
+    province VARCHAR(64) NULL,
     city VARCHAR(64) NOT NULL,
     address VARCHAR(255) NULL,
     longitude DECIMAL(10, 6) NULL,
     latitude DECIMAL(10, 6) NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'ENABLED',
     create_time DATETIME NOT NULL,
     update_time DATETIME NOT NULL,
     KEY idx_station_name (station_name),
-    KEY idx_station_city (city)
+    KEY idx_station_city (city),
+    KEY idx_station_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @has_station_province = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 't_station' AND COLUMN_NAME = 'province'
+);
+SET @sql = IF(@has_station_province = 0,
+    'ALTER TABLE t_station ADD COLUMN province VARCHAR(64) NULL AFTER station_name',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_station_status = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 't_station' AND COLUMN_NAME = 'status'
+);
+SET @sql = IF(@has_station_status = 0,
+    'ALTER TABLE t_station ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT ''ENABLED'' AFTER latitude',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS t_route (
     id BIGINT NOT NULL PRIMARY KEY,
@@ -70,18 +97,20 @@ CREATE TABLE IF NOT EXISTS t_route (
     KEY idx_route_end (end_station_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO t_station (id, station_name, city, address, longitude, latitude, create_time, update_time)
+INSERT INTO t_station (id, station_name, province, city, address, longitude, latitude, status, create_time, update_time)
 VALUES
-    (1, '广州网点', 'Guangzhou', 'Guangzhou logistics station', 113.264385, 23.129110, NOW(), NOW()),
-    (2, '东莞中转站', 'Dongguan', 'Dongguan transfer station', 113.751799, 23.020673, NOW(), NOW()),
-    (3, '深圳网点', 'Shenzhen', 'Shenzhen logistics station', 114.057865, 22.543096, NOW(), NOW()),
-    (4, '佛山网点', 'Foshan', 'Foshan logistics station', 113.121436, 23.021479, NOW(), NOW())
+    (1, '广州网点', 'Guangdong', 'Guangzhou', 'Guangzhou logistics station', 113.264385, 23.129110, 'ENABLED', NOW(), NOW()),
+    (2, '东莞中转站', 'Guangdong', 'Dongguan', 'Dongguan transfer station', 113.751799, 23.020673, 'ENABLED', NOW(), NOW()),
+    (3, '深圳网点', 'Guangdong', 'Shenzhen', 'Shenzhen logistics station', 114.057865, 22.543096, 'ENABLED', NOW(), NOW()),
+    (4, '佛山网点', 'Guangdong', 'Foshan', 'Foshan logistics station', 113.121436, 23.021479, 'ENABLED', NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     station_name = VALUES(station_name),
+    province = VALUES(province),
     city = VALUES(city),
     address = VALUES(address),
     longitude = VALUES(longitude),
     latitude = VALUES(latitude),
+    status = VALUES(status),
     update_time = NOW();
 
 INSERT INTO t_route (id, start_station_id, end_station_id, distance_km, duration_minute, cost, enabled, create_time, update_time)

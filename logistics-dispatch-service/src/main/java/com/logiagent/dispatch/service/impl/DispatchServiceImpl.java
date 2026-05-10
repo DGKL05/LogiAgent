@@ -1,14 +1,18 @@
 package com.logiagent.dispatch.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.logiagent.api.dto.DispatchSuggestionDTO;
 import com.logiagent.api.dto.DispatchTaskDTO;
 import com.logiagent.api.dto.StationLoadDTO;
+import com.logiagent.api.request.AdminDispatchTaskQueryRequest;
 import com.logiagent.api.request.CreateDispatchTaskRequest;
+import com.logiagent.api.request.UpdateStatusRequest;
 import com.logiagent.common.enums.DispatchTaskStatusEnum;
 import com.logiagent.common.enums.StationLoadLevelEnum;
 import com.logiagent.common.exception.BusinessException;
 import com.logiagent.common.result.ErrorCode;
+import com.logiagent.common.result.PageResult;
 import com.logiagent.dispatch.entity.DispatchTaskEntity;
 import com.logiagent.dispatch.mapper.DispatchTaskMapper;
 import com.logiagent.dispatch.service.DispatchService;
@@ -62,6 +66,35 @@ public class DispatchServiceImpl implements DispatchService {
 
     @Override
     public DispatchTaskDTO getTask(String taskNo) {
+        return toDTO(selectByTaskNo(taskNo));
+    }
+
+    @Override
+    public PageResult<DispatchTaskDTO> pageAdminTasks(AdminDispatchTaskQueryRequest request) {
+        AdminDispatchTaskQueryRequest query = request == null ? new AdminDispatchTaskQueryRequest() : request;
+        Page<DispatchTaskEntity> pageParam = new Page<>(safePage(query.getPage()), safeSize(query.getSize()));
+        Page<DispatchTaskEntity> taskPage = dispatchTaskMapper.selectPage(pageParam, buildAdminWrapper(query));
+        return PageResult.of(taskPage.getRecords().stream().map(this::toDTO).toList(),
+                taskPage.getTotal(), taskPage.getCurrent(), taskPage.getSize());
+    }
+
+    @Override
+    public DispatchTaskDTO updateTaskStatus(String taskNo, UpdateStatusRequest request) {
+        if (request == null || !StringUtils.hasText(request.getStatus())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "status is required");
+        }
+        DispatchTaskStatusEnum status = DispatchTaskStatusEnum.valueOf(request.getStatus());
+        DispatchTaskEntity task = selectByTaskNo(taskNo);
+        task.setTaskStatus(status.name());
+        if (status == DispatchTaskStatusEnum.FINISHED) {
+            task.setFinishTime(LocalDateTime.now());
+        }
+        task.setUpdateTime(LocalDateTime.now());
+        dispatchTaskMapper.updateById(task);
+        return toDTO(task);
+    }
+
+    private DispatchTaskEntity selectByTaskNo(String taskNo) {
         if (!StringUtils.hasText(taskNo)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "taskNo is required");
         }
@@ -71,7 +104,7 @@ public class DispatchServiceImpl implements DispatchService {
         if (task == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "dispatch task not found");
         }
-        return toDTO(task);
+        return task;
     }
 
     @Override
@@ -99,6 +132,33 @@ public class DispatchServiceImpl implements DispatchService {
     @Override
     public List<DispatchSuggestionDTO> suggestions() {
         return loadRanking().stream().map(this::toSuggestion).toList();
+    }
+
+    private LambdaQueryWrapper<DispatchTaskEntity> buildAdminWrapper(AdminDispatchTaskQueryRequest query) {
+        LambdaQueryWrapper<DispatchTaskEntity> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(query.getTaskNo())) {
+            wrapper.like(DispatchTaskEntity::getTaskNo, query.getTaskNo());
+        }
+        if (StringUtils.hasText(query.getWaybillNo())) {
+            wrapper.like(DispatchTaskEntity::getWaybillNo, query.getWaybillNo());
+        }
+        if (query.getCourierId() != null) {
+            wrapper.eq(DispatchTaskEntity::getCourierId, query.getCourierId());
+        }
+        if (query.getStationId() != null) {
+            wrapper.eq(DispatchTaskEntity::getStationId, query.getStationId());
+        }
+        if (StringUtils.hasText(query.getTaskStatus())) {
+            DispatchTaskStatusEnum.valueOf(query.getTaskStatus());
+            wrapper.eq(DispatchTaskEntity::getTaskStatus, query.getTaskStatus());
+        }
+        if (query.getStartTime() != null) {
+            wrapper.ge(DispatchTaskEntity::getCreateTime, query.getStartTime());
+        }
+        if (query.getEndTime() != null) {
+            wrapper.le(DispatchTaskEntity::getCreateTime, query.getEndTime());
+        }
+        return wrapper.orderByDesc(DispatchTaskEntity::getCreateTime);
     }
 
     private StationLoadDTO toLoad(Long stationId, List<DispatchTaskEntity> tasks) {
@@ -144,6 +204,14 @@ public class DispatchServiceImpl implements DispatchService {
 
     private String generateTaskNo(LocalDateTime now) {
         return "DT" + now.format(NUMBER_TIME_FORMATTER);
+    }
+
+    private long safePage(Long page) {
+        return Math.max(page == null ? 1L : page, 1L);
+    }
+
+    private long safeSize(Long size) {
+        return Math.max(size == null ? 10L : size, 1L);
     }
 
     private DispatchTaskDTO toDTO(DispatchTaskEntity entity) {

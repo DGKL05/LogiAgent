@@ -1,17 +1,10 @@
-package com.logiagent.route.entity;
+package com.logiagent.api.request;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-@TableName("t_station")
-public class StationEntity {
+public class StationSaveRequest implements Serializable {
 
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
     private String stationName;
     private String province;
     private String city;
@@ -19,16 +12,6 @@ public class StationEntity {
     private BigDecimal longitude;
     private BigDecimal latitude;
     private String status;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getStationName() {
         return stationName;
@@ -38,16 +21,16 @@ public class StationEntity {
         this.stationName = stationName;
     }
 
-    public String getCity() {
-        return city;
-    }
-
     public String getProvince() {
         return province;
     }
 
     public void setProvince(String province) {
         this.province = province;
+    }
+
+    public String getCity() {
+        return city;
     }
 
     public void setCity(String city) {
@@ -84,21 +67,5 @@ public class StationEntity {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
-    }
-
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(LocalDateTime updateTime) {
-        this.updateTime = updateTime;
     }
 }

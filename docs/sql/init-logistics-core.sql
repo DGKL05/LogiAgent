@@ -2,6 +2,99 @@ CREATE DATABASE IF NOT EXISTS logiagent DEFAULT CHARACTER SET utf8mb4 COLLATE ut
 
 USE logiagent;
 
+CREATE TABLE IF NOT EXISTS t_user (
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(64) NOT NULL,
+    password VARCHAR(128) NOT NULL,
+    phone VARCHAR(20) NULL,
+    status TINYINT NOT NULL DEFAULT 1,
+    create_time DATETIME NOT NULL,
+    update_time DATETIME NOT NULL,
+    UNIQUE KEY uk_user_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_role (
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    role_code VARCHAR(64) NOT NULL,
+    role_name VARCHAR(64) NOT NULL,
+    create_time DATETIME NOT NULL,
+    update_time DATETIME NOT NULL,
+    UNIQUE KEY uk_role_code (role_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_user_role (
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    create_time DATETIME NOT NULL,
+    UNIQUE KEY uk_user_role (user_id, role_id),
+    KEY idx_user_role_user_id (user_id),
+    KEY idx_user_role_role_id (role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_permission (
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    permission_code VARCHAR(128) NOT NULL,
+    permission_name VARCHAR(128) NULL,
+    create_time DATETIME NOT NULL,
+    update_time DATETIME NOT NULL,
+    UNIQUE KEY uk_permission_code (permission_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_role_permission (
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    role_id BIGINT NOT NULL,
+    permission_id BIGINT NOT NULL,
+    create_time DATETIME NOT NULL,
+    UNIQUE KEY uk_role_permission (role_id, permission_id),
+    KEY idx_role_permission_role_id (role_id),
+    KEY idx_role_permission_permission_id (permission_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO t_role (id, role_code, role_name, create_time, update_time)
+VALUES
+    (1, 'ADMIN', '管理员', NOW(), NOW()),
+    (2, 'USER', '普通用户', NOW(), NOW()),
+    (3, 'COURIER', '快递员', NOW(), NOW()),
+    (4, 'DRIVER', '司机', NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+    role_code = VALUES(role_code),
+    role_name = VALUES(role_name),
+    update_time = NOW();
+
+INSERT INTO t_permission (id, permission_code, permission_name, create_time, update_time)
+VALUES
+    (1, 'ADMIN_ACCESS', '访问管理后台接口', NOW(), NOW()),
+    (2, 'DASHBOARD_VIEW', '查看数据看板', NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+    permission_code = VALUES(permission_code),
+    permission_name = VALUES(permission_name),
+    update_time = NOW();
+
+INSERT INTO t_role_permission (id, role_id, permission_id, create_time)
+VALUES
+    (1, 1, 1, NOW()),
+    (2, 1, 2, NOW())
+ON DUPLICATE KEY UPDATE
+    role_id = VALUES(role_id),
+    permission_id = VALUES(permission_id);
+
+INSERT INTO t_user (id, username, password, phone, status, create_time, update_time)
+VALUES
+    (1, 'admin', '$2a$10$zagJjO4Fat41/jQfoxhU8uzhDq4uGIRW5BYlEi/.Re3VaMXTLLb6C', NULL, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+    username = VALUES(username),
+    password = VALUES(password),
+    status = VALUES(status),
+    update_time = NOW();
+
+INSERT INTO t_user_role (id, user_id, role_id, create_time)
+VALUES
+    (1, 1, 1, NOW())
+ON DUPLICATE KEY UPDATE
+    user_id = VALUES(user_id),
+    role_id = VALUES(role_id);
+
 CREATE TABLE IF NOT EXISTS t_order (
     id BIGINT NOT NULL PRIMARY KEY,
     order_no VARCHAR(32) NOT NULL,

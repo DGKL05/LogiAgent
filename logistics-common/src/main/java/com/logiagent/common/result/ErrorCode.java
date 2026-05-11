@@ -6,6 +6,8 @@ public enum ErrorCode {
     PARAM_ERROR(400, "param error"),
     UNAUTHORIZED(401, "unauthorized"),
     FORBIDDEN(403, "forbidden"),
+    TOKEN_EXPIRED(401, "token expired"),
+    TOKEN_INVALID(401, "token invalid"),
     NOT_FOUND(404, "not found"),
     SYSTEM_ERROR(500, "system error");
 

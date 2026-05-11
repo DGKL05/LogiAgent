@@ -108,3 +108,18 @@ spring:
                 - Path=/api/admin/dashboard,/api/admin/dashboard/**
               filters:
                 - StripPrefix=1
+
+jwt:
+  secret: ${JWT_SECRET:logiagent-dev-secret-change-me}
+  expire-seconds: ${JWT_EXPIRE_SECONDS:7200}
+  issuer: logiagent
+
+auth:
+  whitelist:
+    - /api/auth/login
+    - /api/auth/register
+    - /internal/health
+    - /actuator/**
+  admin-only:
+    - /api/admin/**
+    - /api/dispatch/**

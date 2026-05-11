@@ -1,5 +1,37 @@
 # LogiAgent
 
+## Milestone 7 JWT 认证授权
+
+新增 `logistics-auth-service` 登录认证能力和 Gateway 统一鉴权过滤器。管理后台接口 `/api/admin/**` 必须携带 `Authorization: Bearer <token>`，且 Token 中必须包含 `ADMIN` 角色；未登录返回 401，非管理员返回 403。
+
+开发环境默认账号仅用于本地演示：
+
+- username: `admin`
+- password: `admin123456`
+- role: `ADMIN`
+
+生产环境必须修改默认密码，并通过环境变量配置 JWT 密钥：
+
+```bash
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRE_SECONDS=7200
+```
+
+登录示例：
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123456"}'
+```
+
+访问后台接口：
+
+```bash
+curl "http://localhost:8080/api/admin/orders?page=1&size=10" \
+  -H "Authorization: Bearer <token>"
+```
+
 LogiAgent 是一个 Java 17 + Spring Cloud Alibaba 物流微服务项目，AI Agent 是当前阶段的核心展示能力。
 
 当前处于 Milestone 3：AI Agent MVP。已完成订单、运单、轨迹核心业务闭环，并新增规则版 Agent：用户用自然语言询问运单，Agent 识别意图后通过 Tool + Feign 调用业务服务，汇总运单和轨迹数据并返回自然语言分析。

@@ -6,6 +6,7 @@ import com.logiagent.common.auth.JwtUtils;
 import com.logiagent.gateway.config.AuthProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -71,6 +72,22 @@ class AuthGlobalFilterTest {
         assertEquals("1", userId.get());
         assertEquals("admin", username.get());
         assertEquals("ADMIN", roles.get());
+    }
+
+    @Test
+    void optionsRequestShouldBypassAuthFilter() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.method(HttpMethod.OPTIONS, "/api/admin/orders").build()
+        );
+        AtomicReference<Boolean> forwarded = new AtomicReference<>(false);
+
+        filter.filter(exchange, next -> {
+            forwarded.set(true);
+            return Mono.empty();
+        }).block();
+
+        assertNull(exchange.getResponse().getStatusCode());
+        assertEquals(true, forwarded.get());
     }
 
     private GatewayFilterChain emptyChain() {

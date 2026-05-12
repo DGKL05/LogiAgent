@@ -301,3 +301,49 @@ Milestone 6 为后续 Vue3 + Element Plus 管理后台补充后端接口能力�
 管理后台能力包括订单管理、运单管理、异常件管理、网点管理、线路管理、调度任务管理、Agent 会话管理和数据看板。Dashboard 由 ai-agent-service 通过 Feign 聚合业务服务统计数据，不直接访问 order、waybill、track、dispatch 数据库。
 
 当前权限系统仍是 MVP 预留，`/api/admin/**` 后续可接入 auth-service、JWT 和 RBAC。
+
+## Milestone 8 管理后台前端
+
+新增 `logiagent-admin-web`，用于演示 Vue3 + Element Plus 管理后台能力。
+
+技术栈：
+
+- Vue 3
+- TypeScript
+- Vite
+- Element Plus
+- Vue Router
+- Pinia
+- Axios
+- ECharts
+- dayjs
+
+当前环境未安装 `pnpm`，本阶段使用 npm 完成依赖安装和构建。
+
+启动前端：
+
+```bash
+cd logiagent-admin-web
+npm install
+npm run dev
+```
+
+构建前端：
+
+```bash
+cd logiagent-admin-web
+npm run build
+```
+
+前端环境变量示例见 `logiagent-admin-web/.env.example`：
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+默认开发账号：
+
+- username: `admin`
+- password: `admin123456`
+
+使用前需要先启动 Gateway、auth-service，以及需要联调的业务服务。管理后台页面包括登录页、数据看板、订单管理、运单管理、异常件管理、网点管理、线路管理、调度任务、Agent 问答、Agent 会话和物流日报。

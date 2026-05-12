@@ -1,0 +1,78 @@
+:root {
+  color: #263238;
+  background: #f3f6fa;
+  font-family:
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 1180px;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f3f6fa;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-title {
+  margin: 0;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.muted {
+  color: #7a8797;
+}
+
+.filter-card .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.table-card {
+  border-radius: 8px;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.pre-wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+.mono {
+  font-family: Consolas, "Courier New", monospace;
+}
